@@ -1,5 +1,6 @@
 import streamlit as st
 import akshare as ak
+import yfinance as yf
 import pandas as pd
 import ta
 import plotly.graph_objects as go
@@ -55,31 +56,71 @@ def clean_num(n):
     except: return 0.0
 
 # --- 4. 数据获取 (AkShare) ---
-@st.cache_data(ttl=3600)
 def get_static_data(code):
+    """双源获取静态数据: AkShare (首选) -> Yfinance (备选)"""
+    code = str(code).strip()
+    
+    # --- 尝试 1: AkShare (国内源) ---
     try:
-        code = str(code).strip()
         df = ak.stock_zh_a_hist(symbol=code, period="daily", adjust="qfq")
         df.rename(columns={'日期':'Date','开盘':'Open','收盘':'Close','最高':'High','最低':'Low','成交量':'Volume'}, inplace=True)
         df['Date'] = pd.to_datetime(df['Date'])
         df.set_index('Date', inplace=True)
         
+        # 获取基本面
         name = code
         try:
             spot = ak.stock_zh_a_spot_em()
             row = spot[spot['代码']==code]
             if not row.empty: name = row.iloc[0]['名称']
         except: pass
+        
         return df.tail(300), name
-    except: return None, code
+        
+    except Exception:
+        pass # AkShare 失败，静默进入方案 2
+
+    # --- 尝试 2: Yfinance (海外源，适合云端) ---
+    try:
+        # 转换代码格式：6开头加.SS，其他加.SZ
+        yf_code = f"{code}.SS" if code.startswith('6') else f"{code}.SZ"
+        stock = yf.Ticker(yf_code)
+        df = stock.history(period="1y")
+        
+        if not df.empty:
+            # YF数据带时区，需要移除以便后续绘图
+            df.index = df.index.tz_localize(None)
+            return df.tail(300), f"{code}(YF)"
+            
+    except Exception:
+        pass
+        
+    return None, code
 
 def get_live_data(code):
+    """双源获取实时数据"""
+    code = str(code).strip()
+    
+    # --- 尝试 1: AkShare ---
     try:
         df = ak.stock_zh_a_hist_min_em(symbol=code, period='1', adjust='qfq')
         if not df.empty:
             r = df.iloc[-1]
             return {"price": float(r['收盘']), "high": float(r['最高']), "low": float(r['最低'])}
     except: pass
+
+    # --- 尝试 2: Yfinance ---
+    try:
+        yf_code = f"{code}.SS" if code.startswith('6') else f"{code}.SZ"
+        stock = yf.Ticker(yf_code)
+        info = stock.fast_info
+        return {
+            "price": float(info.last_price),
+            "high": float(info.day_high), 
+            "low": float(info.day_low)
+        }
+    except: pass
+    
     return None
 
 def get_news(code):
