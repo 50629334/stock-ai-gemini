@@ -239,9 +239,9 @@ with st.sidebar:
     st.header("控制台")
     # Gemini 模型选择
    model_map = {
+        "Gemini 1.0 Pro (备用)": "gemini-pro" 
         "Gemini 1.5 Flash (快速)": "gemini-1.5-flash-latest",
         "Gemini 1.5 Pro (强力)": "gemini-1.5-pro-latest",
-        "Gemini 1.0 Pro (备用)": "gemini-pro" 
     }
     sel_label = st.selectbox("AI 模型", list(model_map.keys()))
     sel_model = model_map[sel_label]
@@ -340,3 +340,4 @@ elif mode == "实时盯盘":
                 st.plotly_chart(fig, use_container_width=True)
         
         time.sleep(3)
+
