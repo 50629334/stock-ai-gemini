@@ -3,6 +3,7 @@ akshare
 pandas
 ta
 plotly
-google-generativeai>=0.7.2
+google-generativeai
 yfinance
+
 
