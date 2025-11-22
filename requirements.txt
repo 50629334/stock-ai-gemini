@@ -4,3 +4,4 @@ pandas
 ta
 plotly
 google-generativeai
+yfinance
