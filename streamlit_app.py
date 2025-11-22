@@ -4,7 +4,7 @@ import yfinance as yf
 import pandas as pd
 import ta
 import plotly.graph_objects as go
-import google.generativeai as genai  # 替换 ollama
+from openai import OpenAI
 import json
 import re
 import time
@@ -34,12 +34,15 @@ st.markdown("""
 # --- 2. Gemini API 配置 ---
 # 尝试从 Streamlit Secrets 获取 API Key
 try:
-    api_key = st.secrets["GEMINI_API_KEY"]
-    genai.configure(api_key=api_key)
-    GEMINI_AVAILABLE = True
-except:
-    st.error("未检测到 GEMINI_API_KEY，请在 Streamlit Cloud 的 Secrets 中配置。")
-    GEMINI_AVAILABLE = False
+    # 从 Secrets 获取配置
+    api_key = st.secrets["AI_API_KEY"]
+    base_url = st.secrets["AI_BASE_URL"]
+    
+    client = OpenAI(api_key=api_key, base_url=base_url)
+    AI_AVAILABLE = True
+except Exception as e:
+    st.error(f"AI 配置缺失: {e}")
+    AI_AVAILABLE = False
 
 # --- 3. 核心工具函数 ---
 
@@ -341,5 +344,6 @@ elif mode == "实时盯盘":
                 st.plotly_chart(fig, use_container_width=True)
         
         time.sleep(3)
+
 
 
